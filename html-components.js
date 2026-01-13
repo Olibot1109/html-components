@@ -607,8 +607,18 @@
         }
     };
 
-    // Internal component loading function (works with DOM elements)
+    // Set to track currently loading components to prevent infinite loops
+    const loadingComponents = new Set();
+
+    // Internal component loading function (works with DOM elements) - now supports cascading loads
     function loadComponentIntoElement(element, componentPath) {
+        // Prevent infinite loading loops
+        if (loadingComponents.has(componentPath)) {
+            logger.warn('Component already loading, skipping to prevent infinite loop:', componentPath, 'COMPONENT');
+            return Promise.resolve();
+        }
+
+        loadingComponents.add(componentPath);
         logger.startTimer(`load-component-${componentPath}`);
         logger.log('Loading component:', componentPath, 'COMPONENT');
 
@@ -621,8 +631,12 @@
             // Execute any scripts in the cached HTML
             executeScripts(element);
 
-            logger.endTimer(`load-component-${componentPath}`);
-            return Promise.resolve(cachedContent);
+            // Load any nested components found in the loaded content
+            return loadNestedComponents(element).then(() => {
+                loadingComponents.delete(componentPath);
+                logger.endTimer(`load-component-${componentPath}`);
+                return cachedContent;
+            });
         }
 
         return fetch(componentPath)
@@ -645,10 +659,15 @@
                 // Execute any scripts in the loaded HTML
                 executeScripts(element);
 
-                logger.endTimer(`load-component-${componentPath}`);
-                return html;
+                // Load any nested components found in the loaded content
+                return loadNestedComponents(element).then(() => {
+                    loadingComponents.delete(componentPath);
+                    logger.endTimer(`load-component-${componentPath}`);
+                    return html;
+                });
             })
             .catch(error => {
+                loadingComponents.delete(componentPath);
                 logger.error(`Failed to load component "${componentPath}": ${error.message}`, error, 'COMPONENT');
                 element.innerHTML = `<div style="color: red; padding: 1rem; border: 1px solid red; background: #ffe6e6;">
                     <strong>Component Load Error:</strong> ${componentPath}<br>
@@ -657,6 +676,51 @@
                 logger.endTimer(`load-component-${componentPath}`);
                 throw error;
             });
+    }
+
+    // Load nested components and CSS found within loaded content
+    function loadNestedComponents(container) {
+        // Load nested CSS files
+        const nestedCSS = container.querySelectorAll('[data-css]');
+        const cssPromises = Array.from(nestedCSS).map(element => {
+            const cssPath = element.getAttribute('data-css');
+            if (cssPath) {
+                logger.log('Loading nested CSS:', cssPath, 'CSS');
+                return loadCSS(cssPath).catch(err => {
+                    logger.warn('Failed to load nested CSS:', cssPath, 'CSS');
+                    return null;
+                });
+            }
+            return Promise.resolve();
+        });
+
+        // Load nested components
+        const nestedComponents = container.querySelectorAll('[data-component]');
+        const componentPromises = Array.from(nestedComponents).map(element => {
+            const nestedPath = element.getAttribute('data-component');
+            if (nestedPath) {
+                logger.log('Loading nested component:', nestedPath, 'COMPONENT');
+                return loadComponentIntoElement(element, nestedPath);
+            }
+            return Promise.resolve();
+        });
+
+        const totalNested = nestedCSS.length + nestedComponents.length;
+        if (totalNested === 0) {
+            return Promise.resolve();
+        }
+
+        logger.log(`Found ${nestedCSS.length} nested CSS files and ${nestedComponents.length} nested components to load`, 'COMPONENT');
+
+        return Promise.allSettled([...cssPromises, ...componentPromises]).then(results => {
+            const failedCount = results.filter(result => result.status === 'rejected').length;
+            if (failedCount > 0) {
+                logger.warn(`${failedCount} nested resources failed to load`);
+            } else if (totalNested > 0) {
+                logger.success(`All ${totalNested} nested resources loaded successfully`);
+            }
+            return results;
+        });
     }
 
     // Execute scripts found in loaded HTML - optimized version
