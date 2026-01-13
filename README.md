@@ -32,7 +32,7 @@ A powerful JavaScript library for creating entire websites from modular componen
     <!-- Dynamic components loaded from JavaScript -->
     <div id="hero-section"></div>
 
-    <script src="html-components.js"></script>
+    <script src="https://html-components.voidium.uk/html-components.js"></script>
     <script>
         // Register and load JavaScript components
         HTMLComponents.registerComponent('hero', {
@@ -50,7 +50,7 @@ A powerful JavaScript library for creating entire websites from modular componen
 
 ### Method 2: File-based Components Only
 ```html
-<script src="html-components.js"></script>
+<script src="https://html-components.voidium.uk/html-components.js"></script>
 
 <div data-component="header.html"></div>
 <div data-component="sidebar.html"></div>
@@ -62,7 +62,7 @@ A powerful JavaScript library for creating entire websites from modular componen
 <!DOCTYPE html>
 <html><head><title>My Site</title></head>
 <body><!-- Everything built by JS -->
-<script src="html-components.js"></script>
+<script src="https://html-components.voidium.uk/html-components.js"></script>
 <script src="my-site-config.js"></script>
 </body></html>
 ```

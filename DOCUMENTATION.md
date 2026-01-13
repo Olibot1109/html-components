@@ -23,7 +23,7 @@ A powerful, lightweight JavaScript library for building modular web applications
     <div data-component="header.html"></div>
     <div data-component="content.html"></div>
 
-    <script src="html-components.js"></script>
+    <script src="https://html-components.voidium.uk/html-components.js"></script>
 </body>
 </html>
 ```
@@ -36,7 +36,7 @@ A powerful, lightweight JavaScript library for building modular web applications
     <title>My App</title>
 </head>
 <body><!-- Everything built by JS -->
-    <script src="html-components.js"></script>
+    <script src="https://html-components.voidium.uk/html-components.js"></script>
     <script src="my-app-config.js"></script>
 </body>
 </html>
