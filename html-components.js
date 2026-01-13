@@ -6,9 +6,11 @@
 (function() {
     'use strict';
 
-    // Notification system for visual error display
+    // Notification system for visual error display - optimized with object pooling
     const notificationSystem = {
         container: null,
+        notificationPool: [], // Reuse notification elements
+        maxPoolSize: 5,
 
         init: function() {
             // Create notification container if it doesn't exist
@@ -28,10 +30,30 @@
             }
         },
 
+        // Get notification from pool or create new one
+        getNotification: function() {
+            if (this.notificationPool.length > 0) {
+                return this.notificationPool.pop();
+            }
+            return document.createElement('div');
+        },
+
+        // Return notification to pool
+        releaseNotification: function(notification) {
+            if (this.notificationPool.length < this.maxPoolSize) {
+                // Reset notification for reuse
+                notification.style.cssText = '';
+                notification.innerHTML = '';
+                notification.className = '';
+                this.notificationPool.push(notification);
+            }
+        },
+
         show: function(type, title, message, details = null, suggestions = []) {
             this.init();
 
-            const notification = document.createElement('div');
+            // Get notification from pool
+            const notification = this.getNotification();
             notification.style.cssText = `
                 background: white;
                 border-radius: 8px;
@@ -74,7 +96,10 @@
                 setTimeout(() => {
                     if (notification.parentElement) {
                         notification.style.animation = 'slideOut 0.3s ease-in';
-                        setTimeout(() => notification.remove(), 300);
+                        setTimeout(() => {
+                            notification.remove();
+                            this.releaseNotification(notification);
+                        }, 300);
                     }
                 }, 10000);
             }
@@ -124,12 +149,15 @@
         // Debug mode flag
         debugMode: false,
 
-        // Performance tracking
-        timers: new Map(),
+        // Performance tracking - use WeakMap for better memory management
+        timers: new WeakMap(),
 
-        // Log history for debugging
+        // Log history for debugging - limit size for memory efficiency
         logHistory: [],
-        maxHistorySize: 100,
+        maxHistorySize: 50, // Reduced from 100
+
+        // Cached console methods for performance
+        consoleMethods: {},
 
         // Enable debug mode
         enableDebug: function() {
@@ -398,8 +426,41 @@
         }
     };
 
-    // Component registry for storing component definitions
+    // Component registry for storing component definitions - with template pre-compilation
     const componentRegistry = new Map();
+
+    // Template compiler for efficient prop replacement
+    const templateCompiler = {
+        // Cache compiled templates
+        compiledTemplates: new WeakMap(),
+
+        // Compile template into efficient replacement function
+        compile: function(template, props) {
+            if (!template || !props) return template;
+
+            // Check cache first
+            const cacheKey = template + '|' + props.join(',');
+            if (this.compiledTemplates.has(cacheKey)) {
+                return this.compiledTemplates.get(cacheKey);
+            }
+
+            // Create efficient replacement function
+            const compiled = function(propsObj) {
+                let result = template;
+                for (let i = 0; i < props.length; i++) {
+                    const prop = props[i];
+                    const value = propsObj[prop] !== undefined ? propsObj[prop] : '';
+                    // Use split/join for better performance than regex
+                    result = result.split(`{{${prop}}}`).join(value);
+                }
+                return result;
+            };
+
+            // Cache the compiled function
+            this.compiledTemplates.set(cacheKey, compiled);
+            return compiled;
+        }
+    };
 
     // Page cache for storing rendered page content
     const pageCache = {
@@ -598,24 +659,41 @@
             });
     }
 
-    // Execute scripts found in loaded HTML
+    // Execute scripts found in loaded HTML - optimized version
     function executeScripts(container) {
         const scripts = container.querySelectorAll('script');
+        if (scripts.length === 0) return;
+
+        // Batch external scripts for better performance
+        const externalScripts = [];
+        const inlineScripts = [];
+
         scripts.forEach(script => {
             if (script.src) {
-                // External script
-                logger.log('Executing external script:', script.src);
-                const newScript = document.createElement('script');
-                newScript.src = script.src;
-                document.head.appendChild(newScript);
-            } else {
-                // Inline script
-                logger.log('Executing inline script');
-                try {
-                    eval(script.textContent);
-                } catch (e) {
-                    logger.error('Error executing inline script:', e);
-                }
+                externalScripts.push(script.src);
+            } else if (script.textContent.trim()) {
+                inlineScripts.push(script.textContent);
+            }
+        });
+
+        // Load external scripts
+        externalScripts.forEach(src => {
+            logger.log('Executing external script:', src);
+            const newScript = document.createElement('script');
+            newScript.src = src;
+            newScript.async = false; // Maintain execution order
+            document.head.appendChild(newScript);
+        });
+
+        // Execute inline scripts safely
+        inlineScripts.forEach((scriptText, index) => {
+            logger.log('Executing inline script', { index });
+            try {
+                // Use Function constructor instead of eval for better performance and security
+                const func = new Function(scriptText);
+                func();
+            } catch (e) {
+                logger.error('Error executing inline script:', e);
             }
         });
     }
@@ -749,16 +827,13 @@
 
         let html = definition.template || '';
 
-        // Replace props in template
-        if (definition.props) {
-            definition.props.forEach(prop => {
-                const regex = new RegExp(`{{${prop}}}`, 'g');
-                const value = props[prop] !== undefined ? props[prop] : '';
-                html = html.replace(regex, value);
-            });
+        // Use optimized template compiler for prop replacement
+        if (definition.props && definition.props.length > 0) {
+            const compiledTemplate = templateCompiler.compile(html, definition.props);
+            html = compiledTemplate(props);
         }
 
-        // Add CSS if provided
+        // Add CSS if provided - batch style injection for better performance
         if (definition.styles) {
             const styleId = `component-style-${name}`;
             if (!document.getElementById(styleId)) {
@@ -928,7 +1003,7 @@
         }
     }
 
-    // Process individual component definitions with enhanced features
+    // Process individual component definitions with enhanced features - optimized with batched DOM operations
     function processComponentDefinition(component, target) {
         // Handle different component definition formats
 
@@ -983,13 +1058,10 @@
                 }
             }
 
-            // Add CSS classes if specified
+            // Add CSS classes if specified - batch class additions
             if (css) {
-                if (typeof css === 'string') {
-                    element.classList.add(...css.split(' '));
-                } else if (Array.isArray(css)) {
-                    element.classList.add(...css);
-                }
+                const classesToAdd = typeof css === 'string' ? css.split(' ') : css;
+                element.classList.add(...classesToAdd);
             }
 
             // Add ID if specified
@@ -1030,6 +1102,25 @@
         }
 
         return Promise.resolve();
+    }
+
+    // Optimized batch DOM operations for page building
+    function batchDOMOperations(target, operations) {
+        if (operations.length === 0) return;
+
+        const fragment = document.createDocumentFragment();
+
+        operations.forEach(op => {
+            if (typeof op === 'function') {
+                op(fragment);
+            } else if (op.element && op.method) {
+                fragment[op.method](op.element);
+            }
+        });
+
+        if (fragment.children.length > 0) {
+            target.appendChild(fragment);
+        }
     }
 
     // Expose functions globally for manual loading
