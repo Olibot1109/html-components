@@ -88,16 +88,6 @@
                 </div>
             `;
 
-            // Add slide-in animation
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-            `;
-            document.head.appendChild(style);
-
             this.container.appendChild(notification);
 
             // Auto-remove after 10 seconds for non-errors
@@ -114,17 +104,7 @@
                 }, 10000);
             }
 
-            // Add slide-out animation if not already present
-            setTimeout(() => {
-                const slideOutStyle = document.createElement('style');
-                slideOutStyle.textContent += `
-                    @keyframes slideOut {
-                        from { transform: translateX(0); opacity: 1; }
-                        to { transform: translateX(100%); opacity: 0; }
-                    }
-                `;
-                document.head.appendChild(slideOutStyle);
-            }, 100);
+            // Slide-out animation will be handled by CSS if defined externally
         },
 
         error: function(message, error, suggestions = []) {
