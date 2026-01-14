@@ -10,6 +10,7 @@ Load HTML components from files and build pages dynamically.
 - [Component and CSS Toggling](#component-and-css-toggling)
 - [Page Building](#page-building)
 - [Notifications](#notifications)
+- [Event Binding](#event-binding-data-click)
 - [Logging Control](#logging-control)
 - [Image Loading](#image-loading)
 - [Caching](#caching)
@@ -45,6 +46,338 @@ HTMLComponents.loadComponent('#content', 'content.html')
 ```
 
 Components can automatically load nested components and CSS files. Props are used for template replacement using `{{propName}}` syntax in component HTML.
+
+## Event Binding (data-click)
+
+### Automatic Event Binding
+Bind multiple event types to JavaScript methods using data attributes. The library automatically finds and executes methods when elements are interacted with. Elements can have multiple event handlers simultaneously.
+
+```html
+<!-- components/user-card.html -->
+<div class="user-card">
+    <h3>User Profile</h3>
+
+    <!-- Button with multiple events -->
+    <button id="editBtn"
+            data-click="editUser"
+            data-mouseenter="showTooltip"
+            data-mouseleave="hideTooltip">
+        Edit User (hover for tooltip)
+    </button>
+
+    <!-- Input with focus/blur events -->
+    <input type="text"
+           data-focus="handleFocus"
+           data-blur="handleBlur"
+           data-input="handleInput"
+           placeholder="Enter text">
+
+    <!-- Form with submit event -->
+    <form data-submit="handleSubmit">
+        <button type="submit">Submit</button>
+    </form>
+</div>
+```
+
+```javascript
+// Global methods (accessible anywhere)
+function editUser(event, element, root) {
+    console.log('Edit button clicked');
+    console.log('Element ID:', element.id);        // "editBtn"
+    console.log('Root container:', root.className); // "user-card"
+
+    // Show edit form
+    showEditForm(root);
+}
+
+function deleteUser(event, element, root) {
+    if (confirm('Delete this user?')) {
+        // Delete logic here
+        removeUserFromDOM(root);
+    }
+}
+
+// Register in HTMLComponents.methods
+HTMLComponents.methods.toggleSettings = function(event, el, root) {
+    const settings = root.querySelector('.settings-panel');
+    settings.classList.toggle('hidden');
+};
+```
+
+### Method Resolution Order
+Methods are found in this order:
+
+1. **Global window functions** - `window[methodName]`
+2. **HTMLComponents.methods registry** - `HTMLComponents.methods[methodName]`
+3. **Component script functions** - Functions defined in `<script>` tags within the same component
+
+### Method Parameters
+Event handler methods receive three parameters:
+
+- **`event`** - The click event object (standard DOM Event)
+- **`element`** - The clicked HTML element
+- **`root`** - The closest container element with a class (or the component root)
+
+### Event Types Support
+Supports comprehensive event binding with automatic performance optimization:
+
+| Event Type | Data Attribute | Description |
+|------------|---------------|-------------|
+| `click` | `data-click` | Standard click events |
+| `dblclick` | `data-dblclick` | Double-click events |
+| `mouseenter` | `data-mouseenter` | Mouse enter with debouncing |
+| `mouseleave` | `data-mouseleave` | Mouse leave with debouncing |
+| `mouseover` | `data-mouseover` | Mouse over with debouncing |
+| `mouseout` | `data-mouseout` | Mouse out with debouncing |
+| `mousedown` | `data-mousedown` | Mouse button press |
+| `mouseup` | `data-mouseup` | Mouse button release |
+| `focus` | `data-focus` | Element receives focus |
+| `blur` | `data-blur` | Element loses focus |
+| `change` | `data-change` | Input value changes |
+| `input` | `data-input` | Real-time input changes |
+| `submit` | `data-submit` | Form submission |
+| `keydown` | `data-keydown` | Key press down |
+| `keyup` | `data-keyup` | Key release |
+| `keypress` | `data-keypress` | Character key press |
+
+**Performance Features:**
+- **Debouncing** for mouse events to prevent excessive firing
+- **Error Prevention** - failed method calls prevent default event behavior
+- **Development Warnings** - missing methods show notifications in debug mode
+
+### Error Handling
+Methods that throw errors are caught automatically:
+- Errors are logged to console with full stack traces
+- Visual notifications show error summaries
+- Other components continue to work normally
+
+```javascript
+function problematicMethod(event, el, root) {
+    // This will be caught and logged safely
+    throw new Error('Something went wrong!');
+}
+```
+
+### Working with Component Props
+Access component props data in your methods:
+
+```html
+<!-- user-profile.html -->
+<div class="profile" data-user-id="{{userId}}">
+    <h3>{{userName}}</h3>
+    <button data-click="viewProfile">View Full Profile</button>
+</div>
+```
+
+```javascript
+function viewProfile(event, element, root) {
+    // Get user ID from data attribute (populated via props)
+    const userId = root.getAttribute('data-user-id');
+
+    // Load full profile
+    loadUserProfile(userId);
+}
+```
+
+### Component-Scoped Methods
+Define methods within component `<script>` tags for component-specific functionality:
+
+```html
+<!-- components/shopping-cart.html -->
+<div class="cart">
+    <div class="items">{{itemCount}} items</div>
+    <button data-click="addItem">Add Item</button>
+    <button data-click="removeItem">Remove Item</button>
+</div>
+
+<script>
+function addItem(event, el, root) {
+    // Component-specific logic
+    const currentCount = parseInt(root.querySelector('.items').textContent);
+    root.querySelector('.items').textContent = (currentCount + 1) + ' items';
+
+    // Update global cart state
+    updateCartTotal(1);
+}
+
+function removeItem(event, el, root) {
+    const currentCount = parseInt(root.querySelector('.items').textContent);
+    if (currentCount > 0) {
+        root.querySelector('.items').textContent = (currentCount - 1) + ' items';
+        updateCartTotal(-1);
+    }
+}
+</script>
+```
+
+### Best Practices
+
+#### Method Naming
+Use descriptive, camelCase method names:
+```javascript
+// Good
+saveUserData()
+deleteUserAccount()
+toggleNavigationMenu()
+
+// Avoid
+clickHandler()
+btnClick()
+func1()
+```
+
+#### Error Prevention
+Always handle potential errors:
+```javascript
+function safeMethod(event, el, root) {
+    try {
+        const userId = el.getAttribute('data-user-id');
+        if (!userId) {
+            console.warn('No user ID found');
+            return;
+        }
+
+        // Safe operations
+        updateUser(userId);
+    } catch (error) {
+        console.error('Error in safeMethod:', error);
+        // Show user-friendly message
+        showNotification('Operation failed. Please try again.');
+    }
+}
+```
+
+#### Performance Considerations
+Methods are bound once when components load, not on every click. Keep methods lightweight and delegate heavy operations:
+
+```javascript
+function quickToggle(event, el, root) {
+    // Fast UI updates
+    el.classList.toggle('active');
+    root.classList.toggle('expanded');
+}
+
+function heavyOperation(event, el, root) {
+    // Delegate heavy work to prevent UI blocking
+    setTimeout(() => {
+        performExpensiveCalculation(el.getAttribute('data-id'));
+    }, 0);
+}
+```
+
+#### Accessibility
+Ensure clickable elements are properly accessible:
+```html
+<!-- Good: Semantic button with proper labeling -->
+<button data-click="saveForm" aria-label="Save form data">Save</button>
+
+<!-- Good: Link with clear purpose -->
+<a href="#" data-click="openModal" role="button" aria-label="Open help modal">Help</a>
+```
+
+### Integration Examples
+
+#### Form Handling
+```html
+<form class="contact-form">
+    <input type="text" name="name" required>
+    <input type="email" name="email" required>
+    <button type="button" data-click="submitContactForm">Send Message</button>
+</form>
+```
+
+```javascript
+function submitContactForm(event, el, root) {
+    const form = root;
+    const formData = new FormData(form);
+
+    // Validate form
+    if (!form.checkValidity()) {
+        showValidationErrors(form);
+        return;
+    }
+
+    // Submit data
+    submitToServer(formData)
+        .then(() => showSuccess('Message sent!'))
+        .catch(() => showError('Failed to send message'));
+}
+```
+
+#### Modal Management
+```html
+<div class="modal-overlay" id="myModal">
+    <div class="modal-content">
+        <h2>Confirm Action</h2>
+        <p>Are you sure you want to proceed?</p>
+        <button data-click="confirmAction">Yes, Proceed</button>
+        <button data-click="cancelAction">Cancel</button>
+    </div>
+</div>
+```
+
+```javascript
+function confirmAction(event, el, root) {
+    // Perform the action
+    performCriticalAction();
+
+    // Close modal
+    closeModal(root.id);
+}
+
+function cancelAction(event, el, root) {
+    // Just close modal without action
+    closeModal(root.id);
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('visible');
+}
+```
+
+#### Dynamic Content Loading
+```html
+<div class="product-list">
+    <div class="product" data-product-id="123">
+        <h3>Product Name</h3>
+        <button data-click="loadProductDetails">View Details</button>
+    </div>
+</div>
+```
+
+```javascript
+function loadProductDetails(event, el, root) {
+    const productId = root.getAttribute('data-product-id');
+
+    // Load additional details
+    HTMLComponents.loadComponent('.product-details', 'components/product-detail.html', {
+        productId: productId
+    });
+}
+```
+
+### Debugging Event Binding
+
+Enable debug logging to see event binding details:
+```javascript
+HTMLComponents.enableDebug();
+```
+
+This will show console messages like:
+```
+[HTML Components EVENTS] Found 3 elements with data-click attributes
+[HTML Components EVENTS] Binding click event for method: editUser on element 1
+[HTML Components EVENTS] Successfully bound click event for method: editUser
+[HTML Components EVENTS] Click event triggered for method: editUser
+[HTML Components SUCCESS] Method editUser executed successfully
+```
+
+### Future Enhancements
+Planned improvements include:
+- Event delegation for dynamic content
+- Method binding validation
+- Advanced performance monitoring for event handlers
+- Custom event types and modifiers
 
 ## JavaScript & CSS Loading
 

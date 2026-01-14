@@ -6,6 +6,7 @@
 (function() {
     'use strict';
 
+    // ===== Notification System =====
     // Notification system for visual error display - optimized with object pooling
     const notificationSystem = {
         container: null,
@@ -121,6 +122,7 @@
         }
     };
 
+    // ===== Logger =====
     // Enhanced logging utility with structured logging, levels, and performance tracking
     const logger = {
         // Log levels
@@ -416,6 +418,7 @@
 
 
 
+    // ===== Caching System =====
     // Page cache for storing rendered page content
     const pageCache = {
         enabled: true, // Default to enabled
@@ -516,6 +519,7 @@
         }
     };
 
+    // ===== Image Loading =====
     // Image loading utility
     const imageLoader = {
         cache: new Map(),
@@ -581,6 +585,7 @@
         }
     };
 
+    // ===== Component Loader =====
     // Set to track currently loading components to prevent infinite loops
     const loadingComponents = new Set();
 
@@ -640,6 +645,9 @@
 
                 // Execute any scripts in the loaded HTML
                 executeScripts(element);
+
+                // Bind event handlers for data-click attributes
+                bindEventHandlers(element);
 
                 // Load any nested components found in the loaded content
                 return loadNestedComponents(element).then(() => {
@@ -742,6 +750,180 @@
         });
     }
 
+    // ===== Event Binding =====
+    // Supported event types and their data attributes
+    const supportedEvents = {
+        'click': 'data-click',
+        'dblclick': 'data-dblclick',
+        'mouseenter': 'data-mouseenter',
+        'mouseleave': 'data-mouseleave',
+        'mouseover': 'data-mouseover',
+        'mouseout': 'data-mouseout',
+        'mousedown': 'data-mousedown',
+        'mouseup': 'data-mouseup',
+        'focus': 'data-focus',
+        'blur': 'data-blur',
+        'change': 'data-change',
+        'input': 'data-input',
+        'submit': 'data-submit',
+        'keydown': 'data-keydown',
+        'keyup': 'data-keyup',
+        'keypress': 'data-keypress'
+    };
+
+    // Bind event handlers for all supported data attributes
+    function bindEventHandlers(container) {
+        let totalElements = 0;
+        let totalHandlers = 0;
+
+        // Get all elements that have any data event attributes
+        const allElements = container.querySelectorAll(Object.values(supportedEvents).map(attr => `[${attr}]`).join(', '));
+
+        // Process each element that has event attributes
+        allElements.forEach((element, elementIndex) => {
+            let elementHandlerCount = 0;
+
+            // Check each supported event type for this element
+            Object.entries(supportedEvents).forEach(([eventType, dataAttribute]) => {
+                const methodName = element.getAttribute(dataAttribute);
+                if (methodName) {
+                    bindSingleEventHandler(element, eventType, dataAttribute, methodName, container, elementIndex + 1);
+                    elementHandlerCount++;
+                    totalHandlers++;
+                }
+            });
+
+            if (elementHandlerCount > 0) {
+                totalElements++;
+                logger.log(`Element ${elementIndex + 1} has ${elementHandlerCount} event handler(s)`, {
+                    elementTag: element.tagName,
+                    elementId: element.id,
+                    handlers: elementHandlerCount
+                }, 'EVENTS');
+            }
+        });
+
+        if (totalElements > 0) {
+            logger.info(`Successfully bound ${totalHandlers} event handler(s) on ${totalElements} element(s) in container`, null, 'EVENTS');
+        }
+    }
+
+    // Bind a single event handler
+    function bindSingleEventHandler(element, eventType, dataAttribute, methodName, container, elementIndex) {
+        logger.log(`Binding ${eventType} event for method: ${methodName} on element ${elementIndex}`, {
+            elementTag: element.tagName,
+            elementId: element.id,
+            elementClass: element.className,
+            methodName,
+            eventType,
+            dataAttribute
+        }, 'EVENTS');
+
+        // Find the root container (closest element with a class or the container itself)
+        let root = element;
+        while (root && root !== container && (!root.className || root === document.body)) {
+            root = root.parentElement;
+        }
+        if (!root || root === document.body) {
+            root = container; // Fallback to container
+        }
+
+        // Add event listener with debouncing for performance
+        let timeoutId = null;
+        const eventHandler = function(event) {
+            // Debounce rapid events (like mouseover/mouseout) for better performance
+            if (['mouseenter', 'mouseleave', 'mouseover', 'mouseout'].includes(eventType)) {
+                if (timeoutId) clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    handleEventExecution(event, element, root, methodName, eventType, container);
+                }, 10);
+            } else {
+                handleEventExecution(event, element, root, methodName, eventType, container);
+            }
+        };
+
+        element.addEventListener(eventType, eventHandler);
+
+        logger.success(`Successfully bound ${eventType} event for method: ${methodName}`, null, 'EVENTS');
+    }
+
+    // Handle the actual method execution
+    function handleEventExecution(event, element, root, methodName, eventType, container) {
+        logger.log(`${eventType.charAt(0).toUpperCase() + eventType.slice(1)} event triggered for method: ${methodName}`, {
+            elementTag: element.tagName,
+            elementId: element.id,
+            methodName,
+            eventType
+        }, 'EVENTS');
+
+        // Try to find the method in multiple scopes
+        let method = findMethod(methodName, container);
+
+        if (method && typeof method === 'function') {
+            try {
+                const result = method(event, element, root);
+                const logData = result !== undefined ? { result } : null;
+                logger.success(`Method ${methodName} executed successfully`, logData, 'EVENTS');
+            } catch (error) {
+                logger.error(`Error executing method ${methodName}:`, error, 'EVENTS');
+                // Prevent event default behavior on errors to avoid unexpected actions
+                event.preventDefault();
+            }
+        } else {
+            logger.error(`Method ${methodName} not found`, {
+                searchedScopes: ['window', 'HTMLComponents.methods', 'component scripts'],
+                elementTag: element.tagName,
+                elementId: element.id,
+                methodName,
+                eventType
+            }, 'EVENTS');
+            // Show visual notification for missing methods in development
+            if (logger.debugMode) {
+                notificationSystem.warning(`Method "${methodName}" not found. Check console for details.`);
+            }
+        }
+    }
+
+    // Find a method in the available scopes
+    function findMethod(methodName, container) {
+        // 1. Try global window scope
+        if (typeof window[methodName] === 'function') {
+            return window[methodName];
+        }
+
+        // 2. Try HTMLComponents.methods registry
+        if (typeof window.HTMLComponents !== 'undefined' &&
+            window.HTMLComponents.methods &&
+            typeof window.HTMLComponents.methods[methodName] === 'function') {
+            return window.HTMLComponents.methods[methodName];
+        }
+
+        // 3. Try component script scope (advanced feature)
+        return findMethodInScripts(methodName, container);
+    }
+
+    // Extract method from script tags within the component
+    function findMethodInScripts(methodName, container) {
+        const scripts = container.querySelectorAll('script');
+        for (const script of scripts) {
+            if (script.textContent && script.textContent.includes('function ' + methodName)) {
+                try {
+                    // Extract function from script text (simplified approach)
+                    const funcMatch = script.textContent.match(new RegExp(`function\\s+${methodName}\\s*\\([^)]*\\)\\s*\\{[^}]*\\}`, 's'));
+                    if (funcMatch) {
+                        // Create function from string (not ideal but functional)
+                        return new Function('event', 'el', 'root', funcMatch[0].replace(/^function\s+\w+/, 'return function').replace(/}$/, '};') + `return ${methodName};`)();
+                    }
+                } catch (e) {
+                    logger.warn(`Could not extract method ${methodName} from script`, null, 'EVENTS');
+                }
+                break;
+            }
+        }
+        return null;
+    }
+
+    // ===== Template Processing =====
     // Template processing for component props
     function processTemplate(template, props) {
         if (!props || Object.keys(props).length === 0) {
@@ -771,6 +953,7 @@
         return processedTemplate;
     }
 
+    // ===== JavaScript Execution =====
     // JavaScript execution control
     let jsEnabled = true;
 
@@ -833,6 +1016,7 @@
 
 
 
+    // ===== CSS Loading =====
     // CSS loading functionality with caching
     function loadCSS(href, options = {}) {
         return new Promise((resolve, reject) => {
@@ -908,6 +1092,7 @@
         });
     }
 
+    // ===== Initialization =====
     // Load all components and CSS on page load
     document.addEventListener('DOMContentLoaded', function() {
         logger.log('Initializing HTML Components library');
@@ -958,11 +1143,16 @@
             if (failedCount > 0) {
                 logger.warn(`${failedCount} resource(s) failed to load`);
             }
+
+            // Bind data-click events for static HTML elements (not loaded components)
+            logger.log('Binding data-click events for static HTML elements');
+            bindEventHandlers(document.body);
         });
     });
 
 
 
+    // ===== Layout Engine =====
     // Enhanced page building function with advanced features and caching
     function buildPageFromComponents(pageDefinition, targetElement = 'body', clearTarget = false, cacheOptions = {}) {
         logger.startTimer('build-page');
@@ -1308,8 +1498,12 @@
         logger.endTimer('batch-dom-operations');
     }
 
+    // ===== Global API =====
     // Expose functions globally for manual loading
     window.HTMLComponents = {
+        // Methods registry for data-click handlers
+        methods: {},
+
         // File-based component loading
         loadComponent: function(selector, componentPath, props = {}) {
             const element = document.querySelector(selector);
