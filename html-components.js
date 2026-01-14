@@ -585,7 +585,7 @@
     const loadingComponents = new Set();
 
     // Internal component loading function (works with DOM elements) - now supports cascading loads
-    function loadComponentIntoElement(element, componentPath) {
+    function loadComponentIntoElement(element, componentPath, props = {}) {
         // Prevent infinite loading loops
         if (loadingComponents.has(componentPath)) {
             logger.warn('Component already loading, skipping to prevent infinite loop:', componentPath, 'COMPONENT');
@@ -626,6 +626,12 @@
             .then(html => {
                 const totalTime = logger.endTimer(`load-component-${componentPath}`);
                 logger.success(`Component HTML loaded successfully: ${componentPath} (${html.length} chars, ${totalTime?.toFixed(2) || 'unknown'}ms total)`, null, 'COMPONENT');
+
+                // Process props for template replacement
+                if (Object.keys(props).length > 0) {
+                    logger.log(`Processing ${Object.keys(props).length} props for template replacement`, { props: Object.keys(props) }, 'COMPONENT');
+                    html = processTemplate(html, props);
+                }
 
                 // Cache the content
                 fileCache.set(componentPath, html);
@@ -734,6 +740,35 @@
             }
             return results;
         });
+    }
+
+    // Template processing for component props
+    function processTemplate(template, props) {
+        if (!props || Object.keys(props).length === 0) {
+            return template;
+        }
+
+        let processedTemplate = template;
+
+        // Replace {{propName}} patterns with prop values
+        Object.keys(props).forEach(propName => {
+            const propValue = props[propName];
+            const placeholder = new RegExp(`\\{\\{\\s*${propName}\\s*\\}\\}`, 'g');
+
+            // Convert prop value to string safely
+            let stringValue;
+            if (propValue === null || propValue === undefined) {
+                stringValue = '';
+            } else if (typeof propValue === 'object') {
+                stringValue = JSON.stringify(propValue);
+            } else {
+                stringValue = String(propValue);
+            }
+
+            processedTemplate = processedTemplate.replace(placeholder, stringValue);
+        });
+
+        return processedTemplate;
     }
 
     // JavaScript execution control
@@ -1276,10 +1311,10 @@
     // Expose functions globally for manual loading
     window.HTMLComponents = {
         // File-based component loading
-        loadComponent: function(selector, componentPath) {
+        loadComponent: function(selector, componentPath, props = {}) {
             const element = document.querySelector(selector);
             if (element) {
-                return loadComponentIntoElement(element, componentPath);
+                return loadComponentIntoElement(element, componentPath, props);
             } else {
                 logger.error('Element not found for selector:', selector);
                 return Promise.reject(new Error('Element not found'));

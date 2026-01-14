@@ -10,7 +10,7 @@ Load HTML components from files and build pages dynamically.
 Download `html-components.js` or use the CDN:
 
 ```html
-<script src="https://html-components.voidium.uk/html-components.js"></script>
+<script src="https://html-components.vapp.uk/html-components.js"></script>
 ```
 
 ## Development

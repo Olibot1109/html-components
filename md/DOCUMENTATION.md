@@ -21,8 +21,8 @@ Load HTML components from files and build pages dynamically.
 Quick start guide: [QUICKSTART.md](QUICKSTART.md)
 ## Component Loading
 
-### loadComponent(selector, componentPath)
-Load a component from a file into a DOM element.
+### loadComponent(selector, componentPath, props)
+Load a component from a file into a DOM element with optional props for template replacement.
 
 ```javascript
 // Load into element with ID
@@ -31,13 +31,20 @@ HTMLComponents.loadComponent('#header', 'components/header.html');
 // Load into element with class
 HTMLComponents.loadComponent('.sidebar', 'sidebar.html');
 
+// Load with props for template replacement
+HTMLComponents.loadComponent('#user', 'components/user.html', {
+    username: 'John Doe',
+    role: 'Admin',
+    avatar: 'images/avatar.jpg'
+});
+
 // Returns a Promise
 HTMLComponents.loadComponent('#content', 'content.html')
     .then(() => console.log('Component loaded'))
     .catch(err => console.error('Failed to load:', err));
 ```
 
-Components can automatically load nested components and CSS files.
+Components can automatically load nested components and CSS files. Props are used for template replacement using `{{propName}}` syntax in component HTML.
 
 ## JavaScript & CSS Loading
 

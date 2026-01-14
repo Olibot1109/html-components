@@ -8,7 +8,7 @@ Download `html-components.js` and place it in your project:
 
 ```bash
 # Download the latest version
-curl -O https://html-components.voidium.uk/html-components.js
+curl -O https://html-components.vapp.uk/html-components.js
 
 # Or use the CDN (recommended for quick prototyping)
 ```
