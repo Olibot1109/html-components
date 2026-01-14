@@ -104,6 +104,31 @@ Add interactive functionality:
 </html>
 ```
 
+### Load JavaScript Files
+
+Load JavaScript files dynamically with caching:
+
+```javascript
+// Load utility scripts
+HTMLComponents.loadJS('scripts/utils.js')
+    .then(() => {
+        console.log('Utils loaded, initializing app...');
+        // Now you can use functions from utils.js
+        initMyApp();
+    })
+    .catch(err => console.error('Failed to load utils:', err));
+
+// Load external scripts (like analytics)
+HTMLComponents.loadJS('https://www.googletagmanager.com/gtag/js?id=GA_TRACKING_ID', {
+    async: true,
+    crossOrigin: 'anonymous'
+})
+.then(() => {
+    // Initialize Google Analytics
+    gtag('config', 'GA_TRACKING_ID');
+});
+```
+
 ### Toggle CSS Files
 
 Switch themes dynamically:

@@ -655,6 +655,27 @@
 
     // Load nested components and CSS found within loaded content
     function loadNestedComponents(container) {
+        // Load nested JavaScript files
+        const nestedJS = container.querySelectorAll('[data-js]');
+        logger.log(`Found ${nestedJS.length} nested JS elements to process`, null, 'COMPONENT');
+        const jsPromises = Array.from(nestedJS).map((element, index) => {
+            const jsPath = element.getAttribute('data-js');
+            if (jsPath) {
+                logger.log(`Loading nested JS ${index + 1}/${nestedJS.length}:`, jsPath, 'JS');
+                return HTMLComponents.loadJS(jsPath)
+                    .then(result => {
+                        logger.success(`Nested JS loaded successfully: ${jsPath}`, null, 'JS');
+                        return result;
+                    })
+                    .catch(err => {
+                        logger.warn(`Failed to load nested JS ${index + 1}: ${jsPath}`, null, 'JS');
+                        return null;
+                    });
+            }
+            logger.log(`Skipping nested JS element ${index + 1}: no data-js attribute`, null, 'JS');
+            return Promise.resolve();
+        });
+
         // Load nested CSS files
         const nestedCSS = container.querySelectorAll('[data-css]');
         logger.log(`Found ${nestedCSS.length} nested CSS elements to process`, null, 'COMPONENT');
@@ -697,14 +718,14 @@
             return Promise.resolve();
         });
 
-        const totalNested = nestedCSS.length + nestedComponents.length;
+        const totalNested = nestedJS.length + nestedCSS.length + nestedComponents.length;
         if (totalNested === 0) {
             return Promise.resolve();
         }
 
-        logger.log(`Found ${nestedCSS.length} nested CSS files and ${nestedComponents.length} nested components to load`, 'COMPONENT');
+        logger.log(`Found ${nestedJS.length} nested JS files, ${nestedCSS.length} nested CSS files and ${nestedComponents.length} nested components to load`, 'COMPONENT');
 
-        return Promise.allSettled([...cssPromises, ...componentPromises]).then(results => {
+        return Promise.allSettled([...jsPromises, ...cssPromises, ...componentPromises]).then(results => {
             const failedCount = results.filter(result => result.status === 'rejected').length;
             if (failedCount > 0) {
                 logger.warn(`${failedCount} nested resources failed to load`);
@@ -856,6 +877,20 @@
     document.addEventListener('DOMContentLoaded', function() {
         logger.log('Initializing HTML Components library');
 
+        // Load JavaScript files
+        const jsElements = document.querySelectorAll('[data-js]');
+        logger.log('Found JS files to load:', jsElements.length);
+
+        const jsPromises = Array.from(jsElements).map(element => {
+            const jsPath = element.getAttribute('data-js');
+            if (jsPath) {
+                return HTMLComponents.loadJS(jsPath).catch(error => {
+                    logger.error(`Failed to load JS "${jsPath}": ${error.message}`, error);
+                });
+            }
+            return Promise.resolve();
+        });
+
         // Load CSS files
         const cssElements = document.querySelectorAll('[data-css]');
         logger.log('Found CSS files to load:', cssElements.length);
@@ -882,7 +917,7 @@
             return Promise.resolve();
         });
 
-        Promise.allSettled([...cssPromises, ...componentPromises]).then(results => {
+        Promise.allSettled([...jsPromises, ...cssPromises, ...componentPromises]).then(results => {
             logger.log('All loading attempts completed');
             const failedCount = results.filter(result => result.status === 'rejected').length;
             if (failedCount > 0) {

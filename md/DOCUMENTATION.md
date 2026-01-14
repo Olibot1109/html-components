@@ -788,6 +788,9 @@ Components are regular HTML files that can contain scripts, styles, and nested c
 
     <!-- Load nested CSS -->
     <div data-css="header.css"></div>
+
+    <!-- Load nested JavaScript -->
+    <div data-js="scripts/header.js"></div>
 </header>
 
 <script>
