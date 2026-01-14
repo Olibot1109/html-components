@@ -607,11 +607,14 @@
             logger.success('Component loaded from file cache:', componentPath, 'COMPONENT');
             element.innerHTML = cachedContent;
 
-            // Execute any scripts in the cached HTML
-            executeScripts(element);
+            // Bind event handlers for data-click attributes (before nested loading)
+            bindEventHandlers(element);
 
             // Load any nested components found in the loaded content
             return loadNestedComponents(element).then(() => {
+                // Execute any scripts in the cached HTML after nested components are loaded
+                executeScripts(element);
+
                 loadingComponents.delete(componentPath);
                 logger.endTimer(`load-component-${componentPath}`);
                 return cachedContent;
@@ -643,14 +646,14 @@
 
                 element.innerHTML = html;
 
-                // Execute any scripts in the loaded HTML
-                executeScripts(element);
-
-                // Bind event handlers for data-click attributes
+                // Bind event handlers for data-click attributes (before nested loading)
                 bindEventHandlers(element);
 
                 // Load any nested components found in the loaded content
                 return loadNestedComponents(element).then(() => {
+                    // Execute any scripts in the loaded HTML after nested components are loaded
+                    executeScripts(element);
+
                     loadingComponents.delete(componentPath);
                     return html;
                 });
