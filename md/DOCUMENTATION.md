@@ -6,11 +6,11 @@ Load HTML components from files and build pages dynamically.
 
 - [Quick Start](#quick-start)
 - [Component Loading](#component-loading)
+- [Event Binding (data-click)](#event-binding-data-click)
 - [JavaScript & CSS Loading](#javascript--css-loading)
 - [Component and CSS Toggling](#component-and-css-toggling)
 - [Page Building](#page-building)
 - [Notifications](#notifications)
-- [Event Binding](#event-binding-data-click)
 - [Logging Control](#logging-control)
 - [Image Loading](#image-loading)
 - [Caching](#caching)
