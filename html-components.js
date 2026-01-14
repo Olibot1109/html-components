@@ -49,6 +49,15 @@
             }
         },
 
+        // Check if container should be removed when empty
+        checkContainerRemoval: function() {
+            if (this.container && this.container.children.length === 0 && this.container.parentElement) {
+                this.container.remove();
+                this.container = null;
+                logger.log('Notification container removed - no notifications remaining');
+            }
+        },
+
         show: function(type, title, message, details = null, suggestions = []) {
             this.init();
 
@@ -70,7 +79,7 @@
             notification.innerHTML = `
                 <div style="background: ${headerBg}; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
                     <strong style="color: ${headerText}; margin: 0; font-size: 14px;">${title}</strong>
-                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: ${headerText}; padding: 0; line-height: 1;">×</button>
+                    <button onclick="this.parentElement.parentElement.remove(); window.HTMLComponents._checkNotificationContainer()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: ${headerText}; padding: 0; line-height: 1;">×</button>
                 </div>
                 <div style="padding: 16px;">
                     <p style="margin: 0 0 10px 0; color: #333; font-size: 14px;">${message}</p>
@@ -99,6 +108,7 @@
                         setTimeout(() => {
                             notification.remove();
                             this.releaseNotification(notification);
+                            this.checkContainerRemoval();
                         }, 300);
                     }
                 }, 10000);
@@ -1460,9 +1470,10 @@
             logger.info('Visual notifications are enabled');
         },
         disableNotifications: function() {
-            // For now, just hide the container if it exists
-            if (notificationSystem.container) {
-                notificationSystem.container.style.display = 'none';
+            // Remove the container from DOM completely
+            if (notificationSystem.container && notificationSystem.container.parentElement) {
+                notificationSystem.container.remove();
+                notificationSystem.container = null; // Clear reference
             }
             logger.info('Visual notifications disabled');
         },
@@ -1577,6 +1588,13 @@
         clearComponentCache: function() {
             imageLoader.cache.clear();
             logger.info('Component and image caches cleared', null, 'CACHE');
+        },
+
+        // Internal function for notification container management
+        _checkNotificationContainer: function() {
+            if (notificationSystem && notificationSystem.checkContainerRemoval) {
+                notificationSystem.checkContainerRemoval();
+            }
         }
     };
 
