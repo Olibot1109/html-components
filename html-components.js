@@ -672,7 +672,15 @@
         disableDebug: () => logger.disableDebug(),
         setLogLevel: level => logger.setLevel(level),
 
-        _checkNotificationContainer: () => notificationSystem.checkContainerRemoval()
+        _checkNotificationContainer: () => notificationSystem.checkContainerRemoval(),
+
+        replaceComponent: function(selector, path, props = {}) {
+            const element = document.querySelector(selector);
+            if (!element) {
+                return Promise.reject(new Error(`Element not found: ${selector}`));
+            }
+            return loadComponentIntoElement(element, path, props);
+        }
     };
 
 })();

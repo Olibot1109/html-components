@@ -263,6 +263,29 @@ HTMLComponents.loadComponent('.sidebar', 'sidebar.html', { theme: 'dark' });
 
 ---
 
+#### `replaceComponent(selector, componentPath, props)`
+
+Replace the content of a DOM element with a component. This is functionally equivalent to `loadComponent` but emphasizes the replacement behavior.
+
+```javascript
+HTMLComponents.replaceComponent('#main-content', 'components/home-content.html');
+HTMLComponents.replaceComponent('#user-profile', 'components/profile.html', {
+    title: "Welcome to Math & Calculator",
+    description: "Choose an option below to get started with mathematical operations or use the calculator."
+});
+```
+
+**Parameters:**
+- `selector` (string): CSS selector for target element
+- `componentPath` (string): Path to component HTML file
+- `props` (object, optional): Template variables to replace
+
+**Returns:** Promise that resolves when component is loaded
+
+**Note:** This method replaces the entire innerHTML of the target element with the component content.
+
+---
+
 ### Asset Loading
 
 #### `loadJS(src)`
