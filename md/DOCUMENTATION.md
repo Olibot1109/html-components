@@ -1,45 +1,26 @@
 # HTML Components Documentation
 
-A powerful JavaScript library for building dynamic web applications using reusable HTML components. Load components from files, manage dependencies, handle events, and build complete pages programmatically.
+A lightweight, powerful JavaScript library for building dynamic web applications using reusable HTML components. Load components from files, manage dependencies, handle events, and build complete pages programmatically.
 
 ## Table of Contents
 
 - [Quick Start](#quick-start)
 - [Installation](#installation)
 - [Core Concepts](#core-concepts)
-  - [Component Loading](#component-loading)
-  - [Template System](#template-system)
-  - [Event Binding](#event-binding)
-  - [Dependency Management](#dependency-management)
 - [API Reference](#api-reference)
-  - [Component Management](#component-management)
-  - [Asset Loading](#asset-loading)
-  - [Visibility Controls](#visibility-controls)
-  - [Page Building](#page-building)
-  - [Caching System](#caching-system)
-  - [Logging & Debugging](#logging--debugging)
 - [Advanced Features](#advanced-features)
-  - [Conditional Loading](#conditional-loading)
-  - [Layout System](#layout-system)
-  - [Performance Optimization](#performance-optimization)
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
 - [Examples](#examples)
 
 ## Quick Start
 
-Get started with HTML Components in 5 minutes.
+Get started in 5 minutes.
 
 ### 1. Include the Library
 
 ```html
 <script src="https://html-components.vapp.uk/html-components.js"></script>
-```
-
-Or download and host locally:
-
-```bash
-curl -O https://html-components.vapp.uk/html-components.js
 ```
 
 ### 2. Create a Component
@@ -58,16 +39,16 @@ curl -O https://html-components.vapp.uk/html-components.js
 <header class="header">
     <h1>{{title}}</h1>
     <nav>
-        <a href="#home" data-click="navigateTo" data-route="home">Home</a>
-        <a href="#about" data-click="navigateTo" data-route="about">About</a>
+        <a href="#home" data-click="navigateTo">Home</a>
+        <a href="#about" data-click="navigateTo">About</a>
     </nav>
 </header>
 
 <script>
-function navigateTo(event, element, root) {
-    const route = element.getAttribute('data-route');
+function navigateTo(event, element) {
+    event.preventDefault();
+    const route = element.getAttribute('href').slice(1);
     console.log('Navigating to:', route);
-    // Handle navigation logic here
 }
 </script>
 ```
@@ -83,15 +64,13 @@ function navigateTo(event, element, root) {
 </head>
 <body>
     <!-- Declarative loading -->
-    <div data-component="components/header.html"
-         data-title="Welcome to My Site"></div>
+    <div data-component="components/header.html"></div>
 
     <!-- Programmatic loading -->
     <div id="content"></div>
 
     <script src="html-components.js"></script>
     <script>
-        // Load content programmatically
         HTMLComponents.loadComponent('#content', 'components/content.html', {
             message: 'Hello from JavaScript!'
         });
@@ -107,7 +86,7 @@ function navigateTo(event, element, root) {
 python -m http.server 8080
 
 # Node.js
-npx http-server -p 8080 --cors
+npx http-server -p 8080
 
 # PHP
 php -S localhost:8080
@@ -117,7 +96,7 @@ Visit `http://localhost:8080` and see your components load!
 
 ## Installation
 
-### CDN (Recommended for Development)
+### CDN (Recommended)
 
 ```html
 <script src="https://html-components.vapp.uk/html-components.js"></script>
@@ -126,38 +105,22 @@ Visit `http://localhost:8080` and see your components load!
 ### Local Installation
 
 ```bash
-# Download the library
 curl -O https://html-components.vapp.uk/html-components.js
-
-# Place in your project
-mkdir -p js
-mv html-components.js js/
-```
-
-### NPM (Coming Soon)
-
-```bash
-npm install html-components
 ```
 
 ## Core Concepts
 
 ### Component Loading
 
-Components are loaded in two ways: **declarative** (HTML attributes) and **programmatic** (JavaScript functions).
+Components can be loaded **declaratively** (HTML attributes) or **programmatically** (JavaScript).
 
 #### Declarative Loading
 
-Use `data-component` attributes to automatically load components:
+Use `data-component` to automatically load components on page load:
 
 ```html
 <!-- Basic component -->
 <div data-component="components/header.html"></div>
-
-<!-- Component with props -->
-<div data-component="components/user-card.html"
-     data-user-name="John Doe"
-     data-user-role="Admin"></div>
 
 <!-- Nested components -->
 <div data-component="components/layout.html">
@@ -171,24 +134,24 @@ Use `data-component` attributes to automatically load components:
 Use JavaScript for dynamic loading:
 
 ```javascript
-// Load into element
+// Basic loading
 HTMLComponents.loadComponent('#header', 'components/header.html');
 
-// Load with props
+// With props
 HTMLComponents.loadComponent('#user', 'components/user.html', {
     name: 'Jane Smith',
     email: 'jane@example.com'
 });
 
-// Handle completion
+// With promise handling
 HTMLComponents.loadComponent('#content', 'components/content.html')
-    .then(() => console.log('Component loaded'))
-    .catch(err => console.error('Failed to load:', err));
+    .then(() => console.log('Loaded!'))
+    .catch(err => console.error('Failed:', err));
 ```
 
 ### Template System
 
-Components support template replacement using `{{variable}}` syntax:
+Use `{{variable}}` syntax for dynamic content:
 
 **user-profile.html**
 ```html
@@ -196,34 +159,23 @@ Components support template replacement using `{{variable}}` syntax:
     <img src="{{avatar}}" alt="Avatar">
     <h2>{{name}}</h2>
     <p>{{bio}}</p>
-    <span class="role {{roleClass}}">{{role}}</span>
+    <span class="role">{{role}}</span>
 </div>
 ```
 
-**JavaScript**
+**Usage**
 ```javascript
 HTMLComponents.loadComponent('#profile', 'user-profile.html', {
     name: 'Alice Johnson',
     bio: 'Frontend Developer',
     avatar: 'images/avatar.jpg',
-    role: 'Developer',
-    roleClass: 'developer-badge'
+    role: 'Developer'
 });
-```
-
-**Output**
-```html
-<div class="profile">
-    <img src="images/avatar.jpg" alt="Avatar">
-    <h2>Alice Johnson</h2>
-    <p>Frontend Developer</p>
-    <span class="role developer-badge">Developer</span>
-</div>
 ```
 
 ### Event Binding
 
-Bind JavaScript functions to HTML elements using data attributes:
+Bind functions to elements using data attributes:
 
 ```html
 <button data-click="handleClick">Click me</button>
@@ -234,19 +186,18 @@ Bind JavaScript functions to HTML elements using data attributes:
 ```
 
 ```javascript
-// Global function
-function handleClick(event, element, root) {
-    console.log('Button clicked!');
-    console.log('Element:', element);
-    console.log('Root container:', root);
+function handleClick(event, element) {
+    console.log('Clicked!', element);
 }
 
-// Component-scoped function (inside component file)
-<script>
-function handleInput(event, element, root) {
-    console.log('Input value:', element.value);
+function handleInput(event, element) {
+    console.log('Value:', element.value);
 }
-</script>
+
+function handleSubmit(event, element) {
+    event.preventDefault();
+    console.log('Form submitted');
+}
 ```
 
 #### Supported Events
@@ -255,19 +206,21 @@ function handleInput(event, element, root) {
 |-------|-----------|-------------|
 | `click` | `data-click` | Mouse clicks |
 | `dblclick` | `data-dblclick` | Double clicks |
-| `mouseenter` | `data-mouseenter` | Mouse enter |
-| `mouseleave` | `data-mouseleave` | Mouse leave |
+| `mouseenter` | `data-mouseenter` | Mouse enters element |
+| `mouseleave` | `data-mouseleave` | Mouse leaves element |
 | `input` | `data-input` | Input value changes |
 | `change` | `data-change` | Form element changes |
 | `submit` | `data-submit` | Form submission |
-| `focus` | `data-focus` | Element focus |
-| `blur` | `data-blur` | Element blur |
-| `keydown` | `data-keydown` | Key press down |
-| `keyup` | `data-keyup` | Key release |
+| `focus` | `data-focus` | Element gains focus |
+| `blur` | `data-blur` | Element loses focus |
+| `keydown` | `data-keydown` | Key pressed down |
+| `keyup` | `data-keyup` | Key released |
+
+**Important:** Event handlers are bound **once per element** to prevent duplicates. The library automatically tracks which events have been bound using `data-bound-*` attributes.
 
 ### Dependency Management
 
-Components can automatically load CSS and JavaScript dependencies:
+Components automatically load CSS and JavaScript dependencies:
 
 **dashboard.html**
 ```html
@@ -283,17 +236,16 @@ Components can automatically load CSS and JavaScript dependencies:
 
 <div class="dashboard">
     <h1>Dashboard</h1>
-    <!-- Dashboard content -->
 </div>
 ```
 
-All dependencies are loaded automatically when the component loads.
+Dependencies are loaded in parallel for optimal performance.
 
 ## API Reference
 
 ### Component Management
 
-#### loadComponent(selector, componentPath, props)
+#### `loadComponent(selector, componentPath, props)`
 
 Load a component into a DOM element.
 
@@ -302,43 +254,57 @@ HTMLComponents.loadComponent('#header', 'components/header.html');
 HTMLComponents.loadComponent('.sidebar', 'sidebar.html', { theme: 'dark' });
 ```
 
-#### replaceComponent(selector, newComponentPath)
+**Parameters:**
+- `selector` (string): CSS selector for target element
+- `componentPath` (string): Path to component HTML file
+- `props` (object, optional): Template variables to replace
 
-Replace existing component content.
+**Returns:** Promise that resolves when component is loaded
 
-```javascript
-HTMLComponents.replaceComponent('#content', 'components/new-content.html');
-```
-
-#### replaceComponentByPath(oldPath, newPath)
-
-Replace component by its data-component path.
-
-```javascript
-HTMLComponents.replaceComponentByPath('components/old.html', 'components/new.html');
-```
+---
 
 ### Asset Loading
 
-#### loadJS(src, options)
+#### `loadJS(src)`
 
-Load JavaScript files with caching.
+Load JavaScript files with automatic caching.
 
 ```javascript
 HTMLComponents.loadJS('scripts/utils.js');
-HTMLComponents.loadJS('analytics.js', { async: true, crossOrigin: 'anonymous' });
+HTMLComponents.loadJS('https://cdn.example.com/library.js');
 ```
 
-#### loadCSS(href, options)
+**Parameters:**
+- `src` (string): Path to JavaScript file
+
+**Returns:** Promise that resolves when JS is loaded and executed
+
+**Note:** Scripts are executed using `eval` in global scope to ensure functions are available. Already-loaded scripts are skipped.
+
+---
+
+#### `loadCSS(href, options)`
 
 Load CSS files with caching.
 
 ```javascript
 HTMLComponents.loadCSS('styles/main.css');
-HTMLComponents.loadCSS('theme.css', { media: 'screen and (max-width: 768px)' });
+HTMLComponents.loadCSS('theme.css', { 
+    media: 'screen and (max-width: 768px)' 
+});
 ```
 
-#### loadImage(src, options)
+**Parameters:**
+- `href` (string): Path to CSS file
+- `options` (object, optional):
+  - `media` (string): Media query
+  - `crossOrigin` (string): CORS setting
+
+**Returns:** Promise that resolves when CSS is loaded
+
+---
+
+#### `loadImage(src, options)`
 
 Load images with caching.
 
@@ -347,63 +313,65 @@ HTMLComponents.loadImage('logo.png');
 HTMLComponents.loadImage('hero.jpg', { crossOrigin: 'anonymous' });
 ```
 
-#### preloadImages(sources)
+**Returns:** Promise that resolves with Image object
 
-Preload multiple images.
+---
+
+#### `preloadImages(sources)`
+
+Preload multiple images in parallel.
 
 ```javascript
-HTMLComponents.preloadImages(['img1.jpg', 'img2.png', 'icon.svg']);
+HTMLComponents.preloadImages([
+    'img1.jpg', 
+    'img2.png', 
+    'icon.svg'
+]);
 ```
+
+**Returns:** Promise that resolves with all results (fulfilled or rejected)
+
+---
 
 ### Visibility Controls
 
-#### toggleComponent(selector, show)
+#### `toggleComponent(selector, show)`
 
 Toggle component visibility.
 
 ```javascript
-HTMLComponents.toggleComponent('#sidebar'); // Toggle current state
-HTMLComponents.toggleComponent('#modal', true); // Show
-HTMLComponents.toggleComponent('#modal', false); // Hide
+HTMLComponents.toggleComponent('#sidebar');        // Toggle
+HTMLComponents.toggleComponent('#modal', true);    // Show
+HTMLComponents.toggleComponent('#modal', false);   // Hide
 ```
 
-#### showComponent(selector) / hideComponent(selector)
+**Parameters:**
+- `selector` (string): CSS selector
+- `show` (boolean, optional): Explicit show/hide (omit to toggle)
 
-Show or hide components.
+**Returns:** Boolean (true if now visible, false if hidden)
+
+---
+
+#### `showComponent(selector)` / `hideComponent(selector)`
+
+Explicit show/hide methods.
 
 ```javascript
 HTMLComponents.showComponent('#welcome');
 HTMLComponents.hideComponent('#loading');
 ```
 
-#### isComponentVisible(selector)
-
-Check if component is visible.
-
-```javascript
-if (HTMLComponents.isComponentVisible('#sidebar')) {
-    console.log('Sidebar is visible');
-}
-```
-
-#### Component Path Methods
-
-Same visibility methods but using component paths:
-
-```javascript
-HTMLComponents.toggleComponentByPath('components/sidebar.html');
-HTMLComponents.showComponentByPath('components/modal.html');
-HTMLComponents.isComponentVisibleByPath('components/header.html');
-```
+---
 
 ### Page Building
 
-#### buildPage(pageDefinition, targetElement, clearTarget, cacheOptions)
+#### `buildPage(pageDefinition, targetElement, clearTarget)`
 
 Build complete pages from component definitions.
 
+**Simple Array Format:**
 ```javascript
-// Simple array format
 const page = [
     'components/header.html',
     'components/content.html',
@@ -413,12 +381,12 @@ const page = [
 HTMLComponents.buildPage(page, 'body', true);
 ```
 
+**Advanced Object Format:**
 ```javascript
-// Advanced object format
 const page = {
-    title: 'Dashboard - My App',
-    description: 'Admin dashboard page',
-    styles: ['styles/dashboard.css', 'styles/charts.css'],
+    title: 'Dashboard',
+    description: 'Admin dashboard',
+    styles: ['styles/dashboard.css'],
     components: [
         'components/header.html',
         {
@@ -427,7 +395,11 @@ const page = {
         },
         {
             name: 'content.html',
-            selector: '#main-content'
+            layout: {
+                tag: 'main',
+                class: 'main-content',
+                id: 'content-area'
+            }
         }
     ],
     cacheKey: 'dashboard_v1'
@@ -436,59 +408,113 @@ const page = {
 HTMLComponents.buildPage(page, 'body', true);
 ```
 
+**Parameters:**
+- `pageDefinition` (array|object): Components to load
+- `targetElement` (string, optional): CSS selector (default: 'body')
+- `clearTarget` (boolean, optional): Clear target before building (default: false)
+
+**Returns:** Promise that resolves with build results
+
+---
+
 ### Caching System
 
-#### File Caching
+The library includes two independent caching systems:
+
+#### File Cache
+
+Caches loaded HTML, CSS, and JS file contents.
 
 ```javascript
 HTMLComponents.enableFileCache();   // Enable (default)
 HTMLComponents.disableFileCache();  // Disable
 HTMLComponents.clearFileCache();    // Clear all cached files
-HTMLComponents.getFileCacheStats(); // Get cache statistics
 ```
 
-#### Page Caching
+**Benefits:**
+- Eliminates redundant network requests
+- Faster component loading
+- Reduced server load
+
+---
+
+#### Page Cache
+
+Caches fully-built page HTML.
 
 ```javascript
 HTMLComponents.enablePageCache();   // Enable (default)
 HTMLComponents.disablePageCache();  // Disable
 HTMLComponents.clearPageCache();    // Clear cached pages
-HTMLComponents.getPageCacheStats(); // Get cache statistics
 ```
+
+**Use Cases:**
+- Single-page applications with navigation
+- Pages that rebuild frequently
+- Performance optimization
+
+---
 
 ### Logging & Debugging
 
-#### Debug Control
+The library includes a streamlined logging system that's quiet by default.
+
+#### Debug Mode
 
 ```javascript
-HTMLComponents.enableDebug();    // Enable detailed logging
-HTMLComponents.disableDebug();   // Disable debug mode
-HTMLComponents.setLogLevel('WARN'); // Set minimum log level
+HTMLComponents.enableDebug();    // Enable verbose logging
+HTMLComponents.disableDebug();   // Return to normal mode
 ```
 
-#### Log Inspection
+When debug mode is enabled, you'll see:
+- Component loading progress
+- Cache hits/misses
+- Event binding details
+- Performance timing
+
+---
+
+#### Log Levels
 
 ```javascript
-HTMLComponents.getLogHistory();      // Get all logs
-HTMLComponents.getLogHistory('ERROR'); // Get only errors
-HTMLComponents.getLogStats();        // Get logging statistics
-HTMLComponents.clearLogHistory();    // Clear log history
+HTMLComponents.setLogLevel('ERROR');  // Only errors
+HTMLComponents.setLogLevel('WARN');   // Warnings and errors
+HTMLComponents.setLogLevel('INFO');   // Normal logging (default)
+HTMLComponents.setLogLevel('DEBUG');  // Verbose logging
 ```
 
-#### Performance Timing
+---
+
+#### Log History
 
 ```javascript
-HTMLComponents.startTimer('operation');
-// ... do something ...
-const duration = HTMLComponents.endTimer('operation');
-console.log(`Operation took ${duration}ms`);
+// Get all logs
+const allLogs = HTMLComponents.getLogHistory();
+
+// Get specific level
+const errors = HTMLComponents.getLogHistory('ERROR');
+
+// Clear history
+HTMLComponents.clearLogHistory();
 ```
+
+Each log entry includes:
+```javascript
+{
+    timestamp: "2024-01-15T10:30:00.000Z",
+    level: "INFO",
+    message: "Component loaded successfully",
+    data: { /* optional additional data */ }
+}
+```
+
+---
 
 ## Advanced Features
 
 ### Conditional Loading
 
-Load components based on conditions:
+Load components based on runtime conditions:
 
 ```javascript
 const page = {
@@ -504,19 +530,31 @@ const page = {
         }
     ]
 };
+
+HTMLComponents.buildPage(page);
 ```
+
+The `condition` can be:
+- A function that returns a boolean
+- A boolean value
+- Any truthy/falsy value
+
+---
 
 ### Layout System
 
-Create structured layouts with semantic HTML:
+Create structured layouts with custom containers:
 
 ```javascript
 {
+    name: 'sidebar.html',
     layout: {
-        tag: 'aside',
-        class: 'sidebar',
-        id: 'main-sidebar',
-        attrs: { 'aria-label': 'Navigation' }
+        tag: 'aside',           // HTML tag (default: 'section')
+        class: 'sidebar',       // CSS classes
+        id: 'main-sidebar',     // Element ID
+        attrs: {                // Additional attributes
+            'aria-label': 'Navigation'
+        }
     },
     children: [
         'components/nav-menu.html',
@@ -525,25 +563,47 @@ Create structured layouts with semantic HTML:
 }
 ```
 
+**Shorthand:**
+```javascript
+{
+    name: 'content.html',
+    layout: 'container fluid'  // Just CSS classes
+}
+```
+
+---
+
 ### Performance Optimization
 
-#### Caching Strategies
+#### Automatic Optimizations
 
-- **File caching**: Automatically caches loaded HTML, CSS, and JS files
-- **Page caching**: Caches built page content
-- **Image caching**: Caches loaded images
+1. **File Caching**: All loaded files are cached automatically
+2. **Page Caching**: Built pages are cached by default
+3. **Image Caching**: Loaded images are stored in memory
+4. **Event Deduplication**: Events are only bound once per element
+5. **Batched DOM Operations**: Uses DocumentFragment for efficient rendering
 
-#### Debounced Events
+#### Manual Optimizations
 
-Mouse events are automatically debounced to prevent performance issues.
+```javascript
+// Preload assets before they're needed
+HTMLComponents.preloadImages(['hero.jpg', 'logo.png']);
+HTMLComponents.loadCSS('styles/critical.css');
 
-#### Batched DOM Operations
+// Clear caches during development
+HTMLComponents.clearFileCache();
+HTMLComponents.clearPageCache();
 
-Page building uses document fragments for efficient DOM manipulation.
+// Disable caching for testing
+HTMLComponents.disableFileCache();
+HTMLComponents.disablePageCache();
+```
+
+---
 
 ## Best Practices
 
-### Component Organization
+### Project Structure
 
 ```
 my-app/
@@ -555,275 +615,324 @@ my-app/
 │   ├── ui/
 │   │   ├── button.html
 │   │   ├── modal.html
-│   │   └── form.html
+│   │   └── card.html
 │   └── pages/
 │       ├── home.html
 │       ├── about.html
-│       └── contact.html
+│       └── dashboard.html
 ├── styles/
 │   ├── main.css
-│   ├── components.css
-│   └── themes/
+│   └── components.css
 ├── scripts/
-│   ├── utils.js
-│   └── app.js
+│   ├── app.js
+│   └── utils.js
+├── html-components.js
 └── index.html
 ```
 
-### Naming Conventions
+---
 
-```javascript
-// Good: descriptive and consistent
-function handleUserLogin(event, element, root)
-function validateEmailInput(event, element, root)
-function toggleNavigationMenu(event, element, root)
+### Component Design
 
-// Avoid: generic names
-function clickHandler(event, el, root)
-function func1(event, el, root)
+**✅ Good Component:**
+```html
+<!-- self-contained, reusable -->
+<style scoped>
+.user-card { /* component styles */ }
+</style>
+
+<div class="user-card">
+    <img src="{{avatar}}" alt="{{name}}">
+    <h3>{{name}}</h3>
+    <p>{{bio}}</p>
+</div>
+
+<script>
+// Component-specific functions
+function editUser(event, element) {
+    // handle edit
+}
+</script>
 ```
 
-### Error Handling
+**❌ Avoid:**
+```html
+<!-- too many global dependencies -->
+<div class="card">
+    <div id="global-thing">{{text}}</div>
+</div>
+<script src="external-dependency.js"></script>
+<link rel="stylesheet" href="external-styles.css">
+```
 
+---
+
+### Event Handlers
+
+**✅ Good:**
 ```javascript
-function safeOperation(event, element, root) {
-    try {
-        const userId = element.getAttribute('data-user-id');
-        if (!userId) {
-            console.warn('No user ID found');
-            return;
-        }
-        performOperation(userId);
-    } catch (error) {
-        console.error('Operation failed:', error);
-        showErrorNotification('Something went wrong');
+function handleUserClick(event, element) {
+    const userId = element.dataset.userId;
+    if (!userId) {
+        console.warn('No user ID found');
+        return;
     }
+    loadUserProfile(userId);
 }
 ```
 
-### Performance Tips
+**❌ Avoid:**
+```javascript
+function click(e, el) {
+    // unclear purpose, no validation
+    doSomething(el.dataset.id);
+}
+```
 
-1. **Use caching** for frequently loaded components
-2. **Batch DOM operations** when possible
-3. **Lazy load** non-critical components
-4. **Minimize template complexity** in frequently updated components
+---
+
+### Error Handling
+
+Always handle potential failures:
+
+```javascript
+HTMLComponents.loadComponent('#content', 'components/user.html')
+    .then(() => {
+        console.log('Component loaded successfully');
+    })
+    .catch(error => {
+        console.error('Failed to load component:', error);
+        // Show fallback UI
+        document.querySelector('#content').innerHTML = 
+            '<p>Failed to load content. Please refresh.</p>';
+    });
+```
+
+---
 
 ## Troubleshooting
 
-### Common Issues
+### CORS Errors
 
-#### CORS Errors
+**Problem:** `Cross-Origin Request Blocked` errors
 
-**Problem**: Components fail to load with CORS errors.
-
-**Solution**: Always use a local development server:
+**Solution:** Use a local development server:
 
 ```bash
 # Python
 python -m http.server 8080
 
-# Node.js
-npx http-server -p 8080 --cors
+# Node.js (requires npx)
+npx http-server -p 8080
 
 # PHP
 php -S localhost:8080
 ```
 
-#### Components Not Loading
+**Why:** Browsers block `file://` protocol from loading external files for security.
 
-**Problem**: `data-component` attributes are ignored.
+---
 
-**Solution**: Ensure the library loads before components:
+### Components Not Loading
 
-```html
-<!-- Correct order -->
-<body>
-    <div data-component="header.html"></div>
-    <script src="html-components.js"></script>
-</body>
-```
+**Problem:** `data-component` elements stay empty
 
-#### Event Handlers Not Working
+**Checklist:**
+1. Is the library loaded? Check browser console for errors
+2. Is the file path correct? Check network tab
+3. Is a local server running? Check URL starts with `http://`
+4. Are there any console errors? Enable debug mode
 
-**Problem**: `data-click` functions aren't called.
-
-**Solution**: Check function scope and naming:
-
-```javascript
-// Global scope
-window.myFunction = function(event, element, root) {
-    // handler code
-};
-
-// Or register in methods
-HTMLComponents.methods.myFunction = function(event, element, root) {
-    // handler code
-};
-```
-
-#### Cache Issues
-
-**Problem**: Old component versions load despite changes.
-
-**Solution**: Clear caches during development:
-
-```javascript
-HTMLComponents.clearFileCache();
-HTMLComponents.clearPageCache();
-HTMLComponents.reloadAll();
-```
-
-### Debug Mode
-
-Enable debug logging for detailed information:
-
+**Debug:**
 ```javascript
 HTMLComponents.enableDebug();
+// Reload page and check console
 ```
 
-This shows:
-- Component loading progress
-- Cache hits/misses
-- Event binding details
-- Performance timing
+---
 
-### Visual Notifications
+### Event Handlers Not Working
 
-The library shows visual notifications for errors and warnings. Control them:
+**Problem:** `data-click` handlers don't execute
 
+**Common Causes:**
+
+1. **Function not in global scope:**
 ```javascript
-HTMLComponents.disableNotifications(); // Turn off visual notifications
-HTMLComponents.enableNotifications();  // Turn on (default)
+// ❌ Won't work (inside closure)
+(function() {
+    function myHandler() { }
+})();
+
+// ✅ Works (global)
+function myHandler() { }
+
+// ✅ Also works (explicit global)
+window.myHandler = function() { }
 ```
+
+2. **Function defined after page load:**
+```html
+<!-- ❌ Handler not defined yet -->
+<div data-component="nav.html"></div>
+<script>
+function navHandler() { }
+</script>
+
+<!-- ✅ Define handlers first -->
+<script>
+function navHandler() { }
+</script>
+<div data-component="nav.html"></div>
+```
+
+3. **Typo in function name:**
+```html
+<!-- Function is 'handleClick' but attribute says 'handleClik' -->
+<button data-click="handleClik">Click</button>
+```
+
+---
+
+### Cache Issues
+
+**Problem:** Changes to components don't appear
+
+**Solution:**
+```javascript
+// Clear both caches
+HTMLComponents.clearFileCache();
+HTMLComponents.clearPageCache();
+
+// Then hard refresh (Ctrl+Shift+R or Cmd+Shift+R)
+```
+
+**For development:**
+```javascript
+// Disable caching while developing
+HTMLComponents.disableFileCache();
+HTMLComponents.disablePageCache();
+
+// Re-enable for production
+```
+
+---
+
+### Memory Issues
+
+**Problem:** Page slows down after many component loads
+
+**Solutions:**
+
+1. **Clear caches periodically:**
+```javascript
+setInterval(() => {
+    HTMLComponents.clearFileCache();
+    HTMLComponents.clearPageCache();
+}, 300000); // Every 5 minutes
+```
+
+2. **Limit log history:**
+```javascript
+HTMLComponents.clearLogHistory();
+```
+
+3. **Remove unused components:**
+```javascript
+const oldContent = document.querySelector('#old-content');
+if (oldContent) {
+    oldContent.remove();
+}
+```
+
+---
 
 ## Examples
 
-### Complete SPA Example
+### Single Page Application
 
-**index.html**
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>My SPA</title>
-</head>
-<body>
-    <div id="app"></div>
-    <script src="html-components.js"></script>
-    <script>
-        // Define pages
-        const pages = {
-            home: ['components/header.html', 'components/home.html'],
-            about: ['components/header.html', 'components/about.html'],
-            contact: ['components/header.html', 'components/contact.html']
-        };
+```javascript
+// Define routes
+const routes = {
+    home: {
+        title: 'Home',
+        components: [
+            'components/header.html',
+            'components/hero.html',
+            'components/features.html'
+        ]
+    },
+    about: {
+        title: 'About Us',
+        components: [
+            'components/header.html',
+            'components/about-content.html'
+        ]
+    }
+};
 
-        // Navigation function
-        function navigate(page) {
-            const pageConfig = pages[page];
-            if (pageConfig) {
-                HTMLComponents.buildPage(pageConfig, '#app', true);
-                history.pushState({page}, '', `#${page}`);
-            }
-        }
-
-        // Handle browser back/forward
-        window.onpopstate = function(event) {
-            if (event.state && event.state.page) {
-                navigate(event.state.page);
-            }
-        };
-
-        // Start with home page
-        navigate('home');
-    </script>
-</body>
-</html>
-```
-
-### Theme Switching
-
-**theme-switcher.html**
-```html
-<div class="theme-switcher">
-    <button data-click="setTheme" data-theme="light">Light Theme</button>
-    <button data-click="setTheme" data-theme="dark">Dark Theme</button>
-</div>
-
-<script>
-function setTheme(event, element, root) {
-    const theme = element.getAttribute('data-theme');
-
-    // Disable all theme CSS
-    HTMLComponents.disableCSS('styles/light-theme.css');
-    HTMLComponents.disableCSS('styles/dark-theme.css');
-
-    // Enable selected theme
-    HTMLComponents.enableCSS(`styles/${theme}-theme.css`);
-
-    // Update body class
-    document.body.className = `${theme}-theme`;
+// Navigation function
+function navigate(route) {
+    const config = routes[route];
+    if (!config) return;
+    
+    HTMLComponents.buildPage(config, '#app', true)
+        .then(() => {
+            document.title = config.title;
+            history.pushState({ route }, '', `#${route}`);
+        });
 }
-</script>
+
+// Handle browser back/forward
+window.onpopstate = (e) => {
+    if (e.state?.route) navigate(e.state.route);
+};
+
+// Start
+navigate('home');
 ```
 
-### Dynamic Form Handling
+---
 
-**contact-form.html**
+### Dynamic Form with Validation
+
 ```html
-<form data-submit="handleSubmit">
-    <div class="form-group">
-        <label for="name">Name:</label>
-        <input type="text" id="name" name="name" required>
-    </div>
-
-    <div class="form-group">
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required>
-    </div>
-
-    <div class="form-group">
-        <label for="message">Message:</label>
-        <textarea id="message" name="message" required></textarea>
-    </div>
-
-    <button type="submit">Send Message</button>
+<form data-submit="handleFormSubmit">
+    <input type="email" name="email" data-input="validateEmail" required>
+    <span class="error" id="email-error"></span>
+    
+    <textarea name="message" required></textarea>
+    
+    <button type="submit">Send</button>
 </form>
 
-<div id="response" style="display: none;"></div>
-
 <script>
-function handleSubmit(event, element, root) {
+function validateEmail(event, element) {
+    const error = document.getElementById('email-error');
+    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(element.value);
+    
+    error.textContent = isValid ? '' : 'Invalid email';
+    error.style.display = isValid ? 'none' : 'block';
+}
+
+function handleFormSubmit(event, element) {
     event.preventDefault();
-
+    
     const formData = new FormData(element);
-
-    // Show loading state
-    const submitBtn = element.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Sending...';
-    submitBtn.disabled = true;
-
-    // Simulate API call
+    const data = Object.fromEntries(formData);
+    
     fetch('/api/contact', {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
     })
     .then(response => response.json())
-    .then(data => {
-        HTMLComponents.showComponent('#response');
-        document.getElementById('response').innerHTML =
-            '<div class="success">Message sent successfully!</div>';
+    .then(result => {
+        alert('Message sent!');
         element.reset();
     })
     .catch(error => {
-        HTMLComponents.showComponent('#response');
-        document.getElementById('response').innerHTML =
-            '<div class="error">Failed to send message. Please try again.</div>';
-    })
-    .finally(() => {
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
+        alert('Failed to send message');
     });
 }
 </script>
@@ -831,6 +940,92 @@ function handleSubmit(event, element, root) {
 
 ---
 
-For more examples and community contributions, visit the [GitHub repository](https://github.com/Olibot1107/html-components).
+### Modal System
 
-Need help? Check the troubleshooting section or open an issue on GitHub!
+```javascript
+// modal.html component
+const modalHTML = `
+<div class="modal-overlay" data-click="closeModal" style="display: none;">
+    <div class="modal-content" data-click="preventClose">
+        <button class="close" data-click="closeModal">×</button>
+        <div class="modal-body">{{content}}</div>
+    </div>
+</div>
+`;
+
+// Modal functions
+function openModal(content) {
+    HTMLComponents.loadComponent('#modal-container', 'components/modal.html', {
+        content: content
+    }).then(() => {
+        HTMLComponents.showComponent('.modal-overlay');
+    });
+}
+
+function closeModal(event, element) {
+    HTMLComponents.hideComponent('.modal-overlay');
+}
+
+function preventClose(event) {
+    event.stopPropagation();
+}
+```
+
+---
+
+### Lazy Loading
+
+```javascript
+// Load components when they enter viewport
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const element = entry.target;
+            const componentPath = element.dataset.lazyComponent;
+            
+            if (componentPath) {
+                HTMLComponents.loadComponent(element, componentPath);
+                observer.unobserve(element);
+            }
+        }
+    });
+});
+
+// Observe lazy components
+document.querySelectorAll('[data-lazy-component]').forEach(el => {
+    observer.observe(el);
+});
+```
+
+---
+
+## Browser Support
+
+- Chrome/Edge: ✅ Latest 2 versions
+- Firefox: ✅ Latest 2 versions  
+- Safari: ✅ 12+
+- Mobile browsers: ✅ iOS Safari 12+, Chrome Android
+
+**Required features:**
+- Promises
+- Fetch API
+- ES6 syntax
+- Template literals
+
+---
+
+## License
+
+MIT License - Free for personal and commercial use.
+
+---
+
+## Contributing
+
+Found a bug? Have a feature request? 
+
+Visit: [github.com/Olibot1107/html-components](https://github.com/Olibot1107/html-components)
+
+---
+
+**Made with ❤️ for developers who love simple, powerful tools.**

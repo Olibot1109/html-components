@@ -94,6 +94,10 @@ Create a `components` folder and add your first component:
 .nav a:hover {
     background-color: rgba(255, 255, 255, 0.1);
 }
+
+.nav a.active {
+    background-color: rgba(255, 255, 255, 0.2);
+}
 </style>
 
 <header class="header">
@@ -106,20 +110,20 @@ Create a `components` folder and add your first component:
 </header>
 
 <script>
-function navigate(event, element, root) {
+function navigate(event, element) {
     event.preventDefault();
     const page = element.getAttribute('data-page');
     console.log('Navigating to:', page);
 
     // Remove active class from all nav items
-    root.querySelectorAll('.nav a').forEach(link => {
+    document.querySelectorAll('.nav a').forEach(link => {
         link.classList.remove('active');
     });
 
     // Add active class to clicked item
     element.classList.add('active');
 
-    // Here you would typically load the new page content
+    // Load the new page content
     loadPage(page);
 }
 
@@ -166,9 +170,8 @@ Update your main HTML file to load the component:
 </head>
 <body>
     <div class="container">
-        <!-- Load header component with props -->
-        <div data-component="components/header.html"
-             data-site-name="My Awesome Site"></div>
+        <!-- Load header component -->
+        <div id="header"></div>
 
         <!-- Main content area -->
         <div class="content">
@@ -182,7 +185,11 @@ Update your main HTML file to load the component:
     <script src="html-components.js"></script>
 
     <script>
-        // Your app logic will go here
+        // Load header with props
+        HTMLComponents.loadComponent('#header', 'components/header.html', {
+            siteName: 'My Awesome Site'
+        });
+
         console.log('HTML Components loaded successfully!');
     </script>
 </body>
@@ -245,6 +252,7 @@ Let's create a content component and implement page navigation:
     text-decoration: none;
     display: inline-block;
     transition: background-color 0.3s ease;
+    margin-right: 0.5rem;
 }
 
 .btn:hover {
@@ -264,7 +272,7 @@ Let's create a content component and implement page navigation:
     <h2>{{title}}</h2>
     <p>{{description}}</p>
 
-    <div class="feature-grid" data-show="{{showFeatures}}">
+    <div class="feature-grid" id="features">
         <div class="feature-card">
             <h3>🚀 Easy to Use</h3>
             <p>Create components with just HTML, CSS, and JavaScript. No complex build tools required.</p>
@@ -287,39 +295,26 @@ Let's create a content component and implement page navigation:
     </div>
 
     <div style="margin-top: 2rem;">
-        <button class="btn" data-click="showFeatures">Show Features</button>
-        <button class="btn btn-secondary" data-click="hideFeatures">Hide Features</button>
-        <a href="#" class="btn" data-click="loadContactForm">Contact Us</a>
+        <button class="btn" data-click="toggleFeatures">Toggle Features</button>
+        <a href="#" class="btn btn-secondary" data-click="loadContactForm">Contact Us</a>
     </div>
 </div>
 
 <script>
-let featuresVisible = true;
-
-function showFeatures(event, element, root) {
-    const featureGrid = root.querySelector('.feature-grid');
-    featureGrid.style.display = 'grid';
-    featuresVisible = true;
-    console.log('Features shown');
+function toggleFeatures(event, element) {
+    const features = document.getElementById('features');
+    const isVisible = features.style.display !== 'none';
+    
+    features.style.display = isVisible ? 'none' : 'grid';
+    element.textContent = isVisible ? 'Show Features' : 'Hide Features';
 }
 
-function hideFeatures(event, element, root) {
-    const featureGrid = root.querySelector('.feature-grid');
-    featureGrid.style.display = 'none';
-    featuresVisible = false;
-    console.log('Features hidden');
-}
-
-function loadContactForm(event, element, root) {
+function loadContactForm(event, element) {
     event.preventDefault();
-    // Load contact form dynamically
+    
     HTMLComponents.loadComponent('#dynamic-content', 'components/contact-form.html')
-        .then(() => {
-            console.log('Contact form loaded');
-        })
-        .catch(err => {
-            console.error('Failed to load contact form:', err);
-        });
+        .then(() => console.log('Contact form loaded'))
+        .catch(err => console.error('Failed to load contact form:', err));
 }
 </script>
 ```
@@ -332,18 +327,15 @@ Now update your main script to handle page navigation:
 const pages = {
     home: {
         title: 'Welcome to HTML Components',
-        description: 'Build dynamic web applications with reusable components. Create, load, and manage HTML components with ease.',
-        showFeatures: 'true'
+        description: 'Build dynamic web applications with reusable components. Create, load, and manage HTML components with ease.'
     },
     about: {
         title: 'About HTML Components',
-        description: 'HTML Components is a JavaScript library that makes it easy to build dynamic web applications using reusable HTML components. Load components from files, handle events, and manage dependencies automatically.',
-        showFeatures: 'false'
+        description: 'HTML Components is a JavaScript library that makes it easy to build dynamic web applications using reusable HTML components. Load components from files, handle events, and manage dependencies automatically.'
     },
     contact: {
         title: 'Get in Touch',
-        description: 'Have questions about HTML Components? We\'d love to hear from you!',
-        showFeatures: 'false'
+        description: 'Have questions about HTML Components? We\'d love to hear from you!'
     }
 };
 
@@ -352,12 +344,8 @@ function loadPage(pageName) {
     const pageData = pages[pageName];
     if (pageData) {
         HTMLComponents.loadComponent('#dynamic-content', 'components/content.html', pageData)
-            .then(() => {
-                console.log(`Page "${pageName}" loaded successfully`);
-            })
-            .catch(err => {
-                console.error(`Failed to load page "${pageName}":`, err);
-            });
+            .then(() => console.log(`Page "${pageName}" loaded`))
+            .catch(err => console.error(`Failed to load page "${pageName}":`, err));
     }
 }
 
@@ -458,11 +446,11 @@ Create a contact form component:
 </div>
 
 <script>
-function submitContactForm(event, element, root) {
+function submitContactForm(event, element) {
     event.preventDefault();
 
     const formData = new FormData(element);
-    const messageDiv = root.querySelector('#form-message');
+    const messageDiv = document.getElementById('form-message');
 
     // Show loading state
     const submitBtn = element.querySelector('button[type="submit"]');
@@ -472,7 +460,7 @@ function submitContactForm(event, element, root) {
 
     // Simulate form submission (replace with real API call)
     setTimeout(() => {
-        // Simulate success
+        // Show success message
         messageDiv.textContent = 'Thank you for your message! We\'ll get back to you soon.';
         messageDiv.className = 'form-message success';
         messageDiv.style.display = 'block';
@@ -484,7 +472,7 @@ function submitContactForm(event, element, root) {
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;
 
-        console.log('Form submitted with data:', Object.fromEntries(formData));
+        console.log('Form submitted:', Object.fromEntries(formData));
     }, 1000);
 }
 </script>
@@ -501,7 +489,7 @@ HTML Components requires a local server to avoid CORS issues:
 python -m http.server 8080
 
 # Using Node.js
-npx http-server -p 8080 --cors
+npx http-server -p 8080
 
 # Using PHP
 php -S localhost:8080
@@ -513,7 +501,7 @@ Visit `http://localhost:8080` in your browser. You should see:
 
 - A beautiful header with navigation
 - Dynamic content that changes when you click nav items
-- Interactive buttons that show/hide features
+- Interactive buttons that toggle features
 - A working contact form
 
 ## Project Structure
@@ -524,29 +512,27 @@ Your project should now look like this:
 my-html-components-app/
 ├── index.html
 ├── html-components.js
-├── components/
-│   ├── header.html
-│   ├── content.html
-│   └── contact-form.html
-└── styles/
-    └── (optional: additional stylesheets)
+└── components/
+    ├── header.html
+    ├── content.html
+    └── contact-form.html
 ```
 
 ## What You Learned
 
-✅ **Component Creation**: How to create reusable HTML components with styles and scripts
-✅ **Template System**: Using `{{variable}}` syntax for dynamic content
-✅ **Event Binding**: Connecting user interactions to JavaScript functions
-✅ **Dynamic Loading**: Loading components programmatically with props
-✅ **Page Building**: Creating dynamic single-page applications
+✅ **Component Creation**: How to create reusable HTML components with styles and scripts  
+✅ **Template System**: Using `{{variable}}` syntax for dynamic content  
+✅ **Event Binding**: Connecting user interactions to JavaScript functions with `data-*` attributes  
+✅ **Dynamic Loading**: Loading components programmatically with props  
+✅ **Page Building**: Creating dynamic single-page applications  
 
 ## Next Steps
 
 ### Explore Advanced Features
 
 - **Page Building**: Use `HTMLComponents.buildPage()` for complex layouts
-- **Caching**: Learn about file and page caching for performance
-- **Conditional Loading**: Load components based on user permissions or screen size
+- **Caching**: Leverage automatic file and page caching for better performance
+- **Conditional Loading**: Load components based on conditions
 - **Asset Management**: Automatically load CSS and JavaScript dependencies
 
 ### Build Something Amazing
@@ -567,19 +553,75 @@ Try creating:
 
 ### Components Not Loading?
 
-1. **Check your server**: Make sure you're using a local server (not opening files directly)
+1. **Check your server**: Make sure you're using a local server (not opening files directly with `file://`)
 2. **File paths**: Ensure component paths are correct relative to your HTML file
-3. **Console errors**: Open browser dev tools and check for errors
+3. **Console errors**: Open browser dev tools (F12) and check for errors
+4. **Enable debug mode**: Run `HTMLComponents.enableDebug()` in console for detailed logs
 
 ### Events Not Working?
 
-1. **Function scope**: Make sure event handler functions are in global scope or registered in `HTMLComponents.methods`
-2. **Script loading**: Ensure scripts load before events are triggered
+1. **Function scope**: Event handler functions must be in global scope:
+   ```javascript
+   // ✅ Works - global scope
+   function myHandler(event, element) { }
+   
+   // ✅ Also works - explicit global
+   window.myHandler = function(event, element) { }
+   
+   // ❌ Won't work - inside closure
+   (function() {
+       function myHandler(event, element) { }
+   })();
+   ```
+
+2. **Function defined after component loads**: Define handlers before loading components
+3. **Typo in attribute**: Check `data-click="functionName"` matches your function name exactly
 
 ### Styling Issues?
 
-1. **CSS specificity**: Component styles are scoped to the component container
-2. **Load order**: CSS loads asynchronously - use media queries or load events if needed
+1. **Component styles**: Styles inside components are scoped to that component
+2. **CSS conflicts**: Use specific class names to avoid conflicts
+3. **Load order**: All CSS loads asynchronously
+
+### Cache Issues During Development?
+
+Clear caches when developing:
+
+```javascript
+// Run in browser console
+HTMLComponents.clearFileCache();
+HTMLComponents.clearPageCache();
+
+// Or disable caching while developing
+HTMLComponents.disableFileCache();
+HTMLComponents.disablePageCache();
+
+// Re-enable for production
+HTMLComponents.enableFileCache();
+HTMLComponents.enablePageCache();
+```
+
+## Key Differences from Original Guide
+
+**Event Handlers**: Now use 2 parameters `(event, element)` instead of 3. The `root` parameter has been removed for simplicity.
+
+**Before (Old):**
+```javascript
+function myHandler(event, element, root) {
+    root.querySelector('.something'); // Used root parameter
+}
+```
+
+**Now (New):**
+```javascript
+function myHandler(event, element) {
+    document.querySelector('.something'); // Use document directly
+}
+```
+
+**Event Binding**: Events are now automatically deduplicated - they only bind once per element, preventing duplicate handlers.
+
+**Logging**: The library is quieter by default. Enable debug mode with `HTMLComponents.enableDebug()` to see detailed logs.
 
 ---
 
